@@ -4,6 +4,21 @@ import random as rd
 import scipy.signal
 
 
+
+def convolution_psf(psf_s,image_s):
+    """
+    Entrées : psf_s   : np.array : tableau de taille 512 qui représente la PSF de la bande s
+              image_s : np.array : tableau numpy de taille n+511 qui représente la photo initiale de la bande s
+
+    Sortie  : _       : np.array : tableau numpy de taille n qui représente l'image convoluée de la bande s
+
+    Description :
+    convolution_psf renvoie l'image convoluée par la PSF 
+    """
+    return scipy.signal.fftconvolve(image_s,psf_s)[255:-256,255:-256]
+
+
+
 def echantillonage(image_s,GSD_s,d=0.14):
     """
     Entrées : 
@@ -33,15 +48,21 @@ def echantillonage(image_s,GSD_s,d=0.14):
 
 
 
-def convolution_psf(psf_s,image_s):
+def bruit_normal(image_s,sigma=0.05):
     """
-    Entrées : psf_s   : np.array : tableau de taille 512 qui représente la PSF de la bande s
-              image_s : np.array : tableau numpy de taille n+511 qui représente la photo initiale de la bande s
-
-    Sortie  : _       : np.array : tableau numpy de taille n qui représente l'image convoluée de la bande s
-
-    Description :
-    convolution_psf renvoie l'image convoluée par la PSF 
+    Entrées : image_s : np.array : tableau numpy carré représentant la bande s de l'image échantillonnée d'après le jitter
+              sigma   : float    : écart-type de la loi normale modélisant le bruit
+    Sortie  : _       : np.array : tableau numpy carré de même dimension que image_s représentant la bande s bruitée
     """
-    return scipy.signal.fftconvolve(image_s,psf_s)[255:-256,255:-256]
+    
+    def gauss(x, sigma):
+        """
+        """
+        return np.exp(-x**2/(2*(sigma**2)))/(sigma*np.sqrt(2*np.pi))
+    
+    x = np.arange(501)-250
+    y = gauss(x, sigma)
+    xy = y.reshape((-1, 1))@y.reshape((1, -1))
+    xy /= np.max(xy)
 
+    return scipy.signal.fftconvolve(image_s, xy)
